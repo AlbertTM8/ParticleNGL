@@ -3,7 +3,8 @@
 #include <ngl/Random.h>
 #include <fstream>
 #include <sstream>
-
+#include <ngl/VAOFactory.h>
+#include <ngl/SimpleVAO.h>
 ngl::Vec3 randomVectorOnSphere(float _radius = 1){
     float phi = ngl::Random::randomPositiveNumber(static_cast<float>(M_PI * 2.0f));
 	float costheta = ngl::Random::randomNumber();
@@ -29,11 +30,7 @@ ngl::Vec3 emitDir(0, 10.0f, 0);
 for(auto &p : m_particles){
     createParticle(p);
  }
-
- //Setup OpenGL buffers
- glGenVertexArrays(1, &m_vao);
-glGenBuffers(1, &m_buffer);
-//std::cout<<m_vao+' '<<m_buffer<<'/n';
+m_vao = ngl::VAOFactory::createVAO(ngl::simpleVAO, GL_POINTS);
 }
 
 size_t Emitter::getNumParticles() const
@@ -54,14 +51,12 @@ void Emitter::update(){
 }
 void Emitter::render() const
 {
-
-        glBindVertexArray(m_vao);
-        glBufferData(GL_ARRAY_BUFFER, m_particles.size()*sizeof(Particle), &m_particles[0].position.m_x, GL_STATIC_DRAW);
-        
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), 0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), reinterpret_cast<float *>(6*sizeof(GLfloat)));
-        glEnableVertexAttribArray(1);
-        glDrawArrays(GL_POINTS,0,m_particles.size());
-        glBindVertexArray(0);
+    glPointSize(2);
+    m_vao->bind();
+    m_vao->setData(ngl::SimpleVAO::VertexData(m_particles.size()*sizeof(Particle), m_particles[0].position.m_x));
+    m_vao->setVertexAttributePointer(0, 3, GL_FLOAT, sizeof(Particle), 0);
+    m_vao->setVertexAttributePointer(1, 3, GL_FLOAT, sizeof(Particle), 6);
+    m_vao->setNumIndices(m_particles.size());
+    m_vao->draw();
+    m_vao->unbind();
 }
